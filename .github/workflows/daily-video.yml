@@ -1,0 +1,71 @@
+name: Daily AI Short
+
+on:
+  schedule:
+    - cron: "30 13 * * *" # 7:00 PM India time (UTC+5:30)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-ai-short
+  cancel-in-progress: false
+
+jobs:
+  make-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+
+      - name: Install Python packages
+        run: pip install -r requirements.txt
+
+      - name: Restore YouTube OAuth files
+        env:
+          YOUTUBE_CLIENT_SECRETS_JSON: ${{ secrets.YOUTUBE_CLIENT_SECRETS_JSON }}
+          YOUTUBE_TOKEN_JSON: ${{ secrets.YOUTUBE_TOKEN_JSON }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          for env_name, file_name in [
+              ("YOUTUBE_CLIENT_SECRETS_JSON", "client_secret.json"),
+              ("YOUTUBE_TOKEN_JSON", "token.json")
+          ]:
+              value = os.getenv(env_name)
+              if value:
+                  Path(file_name).write_text(value, encoding="utf-8")
+          PY
+
+      - name: Generate and upload Short
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-2.5-flash
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          UPLOAD_PRIVATELY: "true"
+          VIDEO_LANGUAGE: "Hindi"
+          VOICE_GENDER: "male"
+        run: python src/main.py
+
+      - name: Save generated video as workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-short-${{ github.run_number }}
+          path: output/
+          if-no-files-found: ignore
+          retention-days: 14

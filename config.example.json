@@ -1,0 +1,11 @@
+{
+  "channel_niche": "Interesting facts and mysteries",
+  "language": "Hindi",
+  "voice": "male",
+  "duration_seconds": 55,
+  "scene_count": 6,
+  "upload_privately": true,
+  "youtube_category_id": "27",
+  "default_tags": ["shorts", "facts", "knowledge"],
+  "max_topic_history": 100
+}

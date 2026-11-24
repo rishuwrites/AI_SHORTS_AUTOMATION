@@ -1,0 +1,10 @@
+.env
+*.json
+!config.example.json
+token.json
+client_secret.json
+output/*
+!output/.gitkeep
+work/*
+__pycache__/
+*.pyc
