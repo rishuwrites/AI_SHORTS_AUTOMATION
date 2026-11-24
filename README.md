@@ -3,7 +3,7 @@
 Automatically creates one vertical YouTube Short per scheduled run using:
 - Gemini API for topic/script generation
 - Edge TTS for narration
-- Pexels API for optional stock visuals (falls back to generated graphic backgrounds)
+- DeepAI text-to-image for scene art, with optional Pexels and generated graphic fallbacks
 - Pillow for caption overlays
 - FFmpeg for MP4 rendering
 - YouTube Data API for optional upload
@@ -15,6 +15,7 @@ Default settings: Hindi, male voice, interesting facts and mysteries, 55 seconds
 - GitHub account and repository
 - Gemini API key
 - Optional Pexels API key for stock images
+- DeepAI image generation (no API key; subject to the service's availability and rate limits)
 - FFmpeg (GitHub Actions installs it automatically)
 - YouTube OAuth Desktop App credentials if you want automatic uploads
 
@@ -30,6 +31,7 @@ PEXELS_API_KEY=your_pexels_api_key
 Install and run:
 ```
 pip install -r requirements.txt
+python -m playwright install chromium
 sudo apt-get install ffmpeg
 python src/main.py
 ```
@@ -78,7 +80,7 @@ For GitHub Actions, edit the environment values in `.github/workflows/daily-vide
 
 ## 6. Important limitations
 
-- Gemini and Pexels free quotas/terms can change; a valid key and available quota are required.
+- Gemini, Pexels, and DeepAI quotas/terms can change; DeepAI can rate-limit or block automated requests, in which case the project falls back to Pexels or generated graphic backgrounds.
 - Edge TTS is a community Python interface to Microsoft Edge's online TTS service, not a guaranteed commercial SLA. Review the service terms before relying on it commercially.
 - Pexels visuals are stock photos, not AI-generated moving footage. The project animates them into a vertical video.
 - The script asks the model to avoid repeated topics, but topic history is limited to the checked-out repository state. To persist topic history between GitHub runs, enable repository write permissions and commit the history, or store it externally. This starter workflow does not commit generated history.

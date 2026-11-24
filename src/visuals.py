@@ -3,6 +3,7 @@ from io import BytesIO
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from config import ROOT
+from deepai import DeepAIImageGenerator, DeepAIUnavailableError
 
 W, H = 1080, 1920
 
@@ -81,16 +82,35 @@ def draw_caption(img, caption, title=None):
 def create_scene_images(scenes, title, out_dir):
     out_dir.mkdir(parents=True, exist_ok=True)
     paths = []
-    for i, scene in enumerate(scenes):
-        img = fetch_pexels(scene.get("visual_query", title), i)
-        if img is None:
-            img = gradient_background(i + sum(map(ord, title)))
-            d = ImageDraw.Draw(img)
-            d.ellipse((120+i*35, 350, 900-i*20, 1150), outline=(220,220,240), width=8)
-            d.ellipse((250, 500+i*15, 830, 1080), outline=(180,200,230), width=5)
-        img = cover_crop(img)
-        img = draw_caption(img, scene.get("caption", ""), title if i == 0 else None)
-        p = out_dir / f"scene_{i:02d}.jpg"
-        img.save(p, quality=90)
-        paths.append(p)
+    generator = DeepAIImageGenerator()
+    try:
+        for i, scene in enumerate(scenes):
+            query = scene.get("visual_query", title)
+            img = None
+            if generator:
+                prompt = (
+                    f"{query}. Portrait 9:16 composition, cinematic visual "
+                    "for a short-form video, no text or lettering."
+                )
+                try:
+                    img = generator.generate(prompt)
+                except DeepAIUnavailableError as exc:
+                    print(f"DeepAI unavailable; using image fallback: {exc}")
+                    generator.close()
+                    generator = None
+            if img is None:
+                img = fetch_pexels(query, i)
+            if img is None:
+                img = gradient_background(i + sum(map(ord, title)))
+                d = ImageDraw.Draw(img)
+                d.ellipse((120+i*35, 350, 900-i*20, 1150), outline=(220,220,240), width=8)
+                d.ellipse((250, 500+i*15, 830, 1080), outline=(180,200,230), width=5)
+            img = cover_crop(img)
+            img = draw_caption(img, scene.get("caption", ""), title if i == 0 else None)
+            p = out_dir / f"scene_{i:02d}.jpg"
+            img.save(p, quality=90)
+            paths.append(p)
+    finally:
+        if generator:
+            generator.close()
     return paths
